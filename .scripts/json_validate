@@ -1,0 +1,70 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use 5.010;
+use Pod::Usage;
+use Getopt::Long;
+use JSON::PP;
+use Test::More;
+use JSON::Schema::Tiny;
+use Data::Dumper;
+
+my %args;
+GetOptions(
+    \%args,
+    'help' => sub { pod2usage(1) }
+) or pod2usage(2);
+
+=pod
+
+=head1 NAME
+
+=head1 SYNOPSIS
+
+=cut
+
+
+my $json_file = shift @ARGV;
+my $json_schema_file = shift @ARGV;
+
+my ($json, $json_schema, $json_schema_data, $fmg_data);
+
+# File tests
+ok( $json_file, "Argument Passed" ) or BAIL_OUT("No file");
+ok( -e $json_file, "JSON File Exists" ) or BAIL_OUT("No JSON file");
+
+{
+    local $/;
+    my $fh;
+
+    ok( open($fh, "<:encoding(UTF-8)", $json_file), "Can open JSON file" );
+    $json = <$fh>;
+    close($fh);
+
+    if (defined $json_schema_file) {
+        ok( open( $fh, "<:encoding(UTF-8)", $json_schema_file), "Can open JSON Schema file" );
+        $json_schema = <$fh>;
+        close($fh);
+
+        eval { $json_schema_data =  decode_json($json_schema) };
+        ok( !$@, "Able to decode JSON Schema" );
+    }
+}
+
+eval { $fmg_data =  decode_json($json) };
+ok( !$@, "Able to decode JSON" );
+
+# Validate the JSON against the schema
+if (defined $json_schema_data) {
+    if (
+        !ok(
+            JSON::Schema::Tiny->new(boolean_result => 1)->evaluate($fmg_data, $json_schema_data),
+            "JSON adheres to JSON Schema"
+        )
+    ) {
+        print JSON::PP->new->ascii->pretty->encode( JSON::Schema::Tiny->new->evaluate($fmg_data, $json_schema_data) );
+    }
+}
+
+done_testing();

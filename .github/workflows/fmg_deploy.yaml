@@ -1,0 +1,71 @@
+name: FortiManager Test and Deploy
+on: 
+  push:
+    paths:
+      - fmg_config.json
+jobs:
+  Static-Testing:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Out Repo
+        uses: actions/checkout@v3
+      - name: Install Required Perl modules
+        uses: perl-actions/install-with-cpanm@v1
+        with:
+          install: |
+            JSON::Schema::Tiny
+      - name: Perform Static Testing
+        run: perl .scripts/json_validate fmg_config.json fmg_config.schema.json
+
+  Dynamic-Testing:
+    runs-on: ubuntu-latest
+    needs: [Static-Testing]
+    timeout-minutes: 10
+    services:
+      docker_fmg:
+        image: ghcr.io/gregfoletta/fmg_licensed:7.2.1-flex
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+        ports:
+          - 443:443
+        options: --cap-add=ALL
+    steps:
+      - name: Check out Repo
+        uses: actions/checkout@v3
+      - name: Install Required Perl modules
+        uses: perl-actions/install-with-cpanm@v1
+        with:
+          install: |
+            Mojo::UserAgent
+            IO::Socket::SSL
+      - name: Wait Until FMG is Active
+        #run: until curl --silent -k https://127.0.0.1; do sleep 5; done
+        run: sleep 60
+      - name: Configure FMG
+        env:
+          FMG_API_URI: https://localhost
+          FMG_API_USER: ${{ secrets.FMG_API_USER }}
+          FMG_API_PASS: ${{ secrets.FMG_API_PASS }}
+          #MOJO_GZIP: 0
+          #MOJO_CLIENT_DEBUG: 1
+        run: perl -- .scripts/fmg_config --insecure fmg_config.json
+
+  Deploy-FMG-Changes:
+    runs-on: ubuntu-latest
+    needs: [Dynamic-Testing]
+    steps:
+      - name: Check Out Repo
+        uses: actions/checkout@v3
+      - name: Install Perl dependencies
+        uses: perl-actions/install-with-cpanm@v1
+        with:
+          install: |
+            Mojo::UserAgent
+            IO::Socket::SSL
+      - name: Configure FMG 
+        env:
+          FMG_API_URI: ${{ secrets.FMG_API_URI}}
+          FMG_API_USER: ${{ secrets.FMG_API_USER }}
+          FMG_API_PASS: ${{ secrets.FMG_API_PASS }}
+        run: perl -- .scripts/fmg_config --insecure fmg_config.json

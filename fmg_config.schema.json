@@ -1,0 +1,78 @@
+{
+    "$id": "https://github.com/gregfoletta/fortimanager_pipeline/fmg_config.schema.json",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "description": "FortiManager Pipeline Config",
+    "type": "object",
+    "properties": {
+        "adoms": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/adom" }
+        }
+    },
+    "$defs": {
+        "adom": {
+            "type": "object",
+            "required": [ "name" ],
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "variables": {
+                    "type": "array",
+                    "items": { "$ref": "#/$defs/adom_metavar" }
+                },
+                "devices": {
+                    "type": "array",
+                    "items": { "$ref": "#/$defs/device" }
+                }
+
+            }
+        },
+        "adom_metavar": {
+            "type": "object",
+            "required": [ "name", "value" ],
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "device": {
+            "type": "object",
+            "required": [ "name", "serial" ],
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "serial": {
+                    "type": "string"
+                },
+                "variables": {
+                    "type": "array",
+                    "items": { "$ref": "#/$defs/device_metavar" }
+                }
+            }
+        },
+        "device_metavar": {
+            "type": "object",
+            "required": [ "name", "value" ],
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                },
+                "vdom": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

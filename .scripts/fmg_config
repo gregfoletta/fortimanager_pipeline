@@ -1,0 +1,442 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use 5.010;
+use Pod::Usage;
+use Getopt::Long;
+use Term::ANSIColor;
+use Carp;
+use Mojo::UserAgent;
+use JSON::PP;
+use Data::Dumper;
+
+
+my %args;
+GetOptions(
+    \%args,
+    'fmg=s',
+    'username=s',
+    'password=s',
+    'insecure|k',
+    'help' => sub { pod2usage(1) }
+) or pod2usage(2);
+
+=pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+fmg_meta - register and assign meta fields and meta variables on a FortManager
+
+=head1 VERSION
+
+version .1 (BETA)
+
+=head1 SYNOPSIS
+
+    # Register the definitions and assignments against an FMG 
+    ./fmg_meta --fmg https://fmg.i.foletta.xyz meta.json
+
+    # Insecure if the certificate is not trusted
+    ./fmg_meta --insecure --fmg https://fmg.i.foletta.xyz meta.json
+
+    # API user/pass can be specified as ENV vars
+    export FMG_API_USER=api_user
+    export FMG_API_PASS=c0mpl3xp4ssw0rd
+    ./fmg_meta --fmg https://fmg.i.foletta.xyz meta.json
+
+    # Or on the command line (--username and --password work as well)
+    ./fmg_meta --u api_user -p c0mpl3xp4ssw0rd --fmg https://fmg.i.foletta.xyz meta.json
+
+=head1 OPTIONS
+
+=over
+
+=item -f|--fmg I<uri> - the URI of the FortiManager API
+
+=item -u|--username I<user> - the FortiManager API username
+
+=item -p|--password I<pass> - the FortiManager API password
+
+=item -k|--insecure - don't verify certificate 
+
+=item -h|--help - print usage information
+
+=back
+
+=head1 BETA NOTES
+
+Please note that this script is currently in beta. Two main things to take into account:
+
+=over
+
+=item The schema of the JSON file you use to define/apply the meta fields/variables may change at any time.
+
+=item It only supports defining and assigning meta fields, not meta variables (which are new in 7.2).
+
+=back
+
+=head1 REQUIREMENTS
+
+You'll need the following modules, preferably installed using the more modern L<cpanminus|https://metacpan.org/pod/App::cpanminus>:
+
+    sh$ cpanm Mojo::UserAgent
+
+or the old CPAN client:
+
+    sh$ cpan Mojo::UserAgent
+
+=head1 JSON DEFINITION
+
+A an example C<meta.json> file has been included in this repository.
+
+=head1 AUTHENTICATION
+
+Once you have defined you API user on the FortiManager, the script will search for the credentials in three places:
+
+=over 
+
+=item In $HOME/.ftnt/fmg_api formatted as <username>:<password>
+
+=over
+
+=item  Lines beginning with '#' are skipped
+
+=back
+
+=item In the environment variabes C<FMG_API_USER> and C<FMG_API_PASS>
+
+=item In the command line arguments C<-u|--username> and C<-p|--password>.
+
+=back
+
+If the credentials are available in multiple places, local dotfile beats environment variable beats commandline.
+
+=cut
+
+
+### Log Helpers###
+
+sub log_print {
+    print STDERR colored('- ', 'bold green');
+    say STDERR join ' ', @_;
+}
+
+sub log_error {
+    say STDERR colored('- '.join(' ', @_), 'bold red');
+    exit(1);
+}
+
+sub log_warning {
+    say STDERR colored('- '.join(' ', @_), 'bold yellow');
+}
+
+# Pull the host from the command line or an env
+my $fmg = $args{fmg} // $ENV{FMG_API_URI};
+
+log_error "No --fmg specified" unless $fmg;
+
+# JSON file is the last argument
+my $json_file = shift or log_error "No JSON file specififed";
+my $fmg_data = get_metavar_json($json_file);
+
+log_print "Retreived metavars from JSON file $json_file";
+log_print "Authenticating to FortiManager";
+
+
+
+# Get our API access token
+my $api_json_res = fmg_api_call(
+    fmg => $fmg,
+    method => 'exec',
+    insecure => $args{insecure},
+    url => '/sys/login/user',
+    data => {
+        user => $ENV{FMG_API_USER},
+        passwd  => $ENV{FMG_API_PASS},
+    }
+);
+
+my $session_token = $api_json_res->{session} or log_error "No session token received";
+
+log_print "Authenticated: $session_token";
+
+apply_config($fmg_data, $fmg, $session_token);
+
+
+sub apply_config {
+    my $fmg_data = shift;
+
+    for my $adom (@{ $fmg_data->{adoms} }) {
+        create_adoms($adom, @_);
+        create_adom_metavars($adom, @_);
+        create_devices($adom, @_);
+        create_device_metavars($adom, @_);
+    }
+}
+
+
+sub create_adoms {
+    my ($adom, $uri, $sid) = @_;
+    my $res;
+
+    # First step is to get the current list of configured ADOMs
+    log_print "Retrieving current ADOMs";
+    $res = fmg_api_call(
+        fmg => $uri,
+        session => $sid,
+        method => 'get',
+        insecure => $args{insecure},
+        url => "/dvmdb/adom"
+    ); 
+
+    # Filter out non-user created ADOMs and create a hash
+    my %current_adoms = 
+        map { $_->{name} => 1 }
+        grep { $_->{create_time} != 0 }
+        @{ $res->{result}[0]{data} };
+
+    # Manually add root
+    $current_adoms{root} = 1; 
+
+
+    my $update = !!$current_adoms{ $adom->{name} };
+    log_print $update ? "Updating" : "Creating", "$adom->{name} ADOM";
+
+    $res = fmg_api_call(
+        fmg => $uri,
+        session => $sid,
+        method => $update ? 'update' : 'add',
+        insecure => $args{insecure},
+        url => "/dvmdb/adom",
+        data => [{
+            name => $adom->{name},
+            desc => $adom->{description}
+        }]
+    ); 
+}
+    
+
+sub create_adom_metavars {
+    my ($adom, $uri, $sid) = @_;
+    my $res;
+
+    # Get the current metavars
+    $res = fmg_api_call(
+        fmg => $uri,
+        session => $sid,
+        method => 'get',
+        insecure => $args{insecure},
+        url => "/pm/config/adom/$adom->{name}/obj/fmg/variable",
+    );
+
+    my %current_metavars = 
+        map { $_->{name} => 1 }
+        @{ $res->{result}[0]{data} };
+     
+
+    METAVAR:
+    for my $metavar (@{ $adom->{variables} }) {
+        my $update = !! $current_metavars{ $metavar->{name} };
+        log_print $update ? "Updating" : "Creating", "metavar $metavar->{name} in ADOM $adom->{name}";
+
+        $res = fmg_api_call(
+            fmg => $uri,
+            session => $sid,
+            method => $update ? 'update' : 'add',
+            insecure => $args{insecure},
+            url => "/pm/config/adom/$adom->{name}/obj/fmg/variable",
+            data => [{ 
+                name => $metavar->{name},
+                value => $metavar->{value}
+            }]
+        ); 
+    }
+}
+
+
+sub create_devices {
+    my ($adom, $uri, $sid) = @_;
+    my $res;
+
+    # Get the current devices in the ADOM and create mappings
+    $res = fmg_api_call(
+        fmg => $uri,
+        session => $sid,
+        method => 'get',
+        insecure => $args{insecure},
+        url => "/dvmdb/adom/$adom->{name}/device"
+    ); 
+
+    my %current_devices = 
+        map { $_->{name} => 1 }
+        @{ $res->{result}[0]{data} };
+
+
+    DEVICE:
+    for my $device (@{ $adom->{devices} }) {
+        if ($current_devices{ $device->{name} }) {
+            log_warning "Device '$device->{name}' already added, skipping";
+            next DEVICE;
+        }
+
+        log_print "Creating model device '$device->{name}' in ADOM $adom->{name}";
+
+        $res = fmg_api_call(
+            fmg => $uri,
+            session => $sid,
+            method => 'exec',
+            insecure => $args{insecure},
+            url => '/dvm/cmd/add/device',
+            data => { 
+                adom => $adom->{name},
+                device => {
+                    name => $device->{name},
+                    desc => $device->{description},
+                    sn => $device->{serial},
+                    'device action' => 'add_model',
+                    mgmt_mode => 'fmg',
+                    os_type => 'fos',
+                    os_ver => 7,
+                    mr => 0,
+                },
+                flags => ['none']
+            }
+        ); 
+    }
+}
+
+
+sub create_device_metavars {
+    my ($adom, $uri, $sid) = @_;
+    my $res;
+
+    # Get the per-device metavars for all devices
+    $res = fmg_api_call(
+        fmg => $uri,
+        session => $sid,
+        method => 'get',
+        insecure => $args{insecure},
+        url => "/pm/config/adom/$adom->{name}/obj/fmg/variable",
+    );
+
+    # Determine the currently created variables at a {device,vdom,variable} level
+    my %current_device_metavars; 
+    for my $dynamic_metavars (grep { $_->{dynamic_mapping} } @{ $res->{result}[0]{data} }) {
+        my $variable = $dynamic_metavars->{name};
+        for my $mapping (@{ $dynamic_metavars->{dynamic_mapping} } ) {
+            my ($device, $vdom) = @{ $mapping->{_scope}[0] }{ qw(name vdom) };
+
+            $current_device_metavars{ $device  }{ $vdom }{ $variable } = 1;
+        }
+    }
+
+    DEVICE:
+    for my $device (@{ $adom->{devices} }) {
+        METAVAR:
+        for my $metavar (@{ $device->{variables} }) {
+            my $update = 0;
+            # If the VDOM isn't set, default to global
+            $metavar->{vdom} //= 'global';
+
+
+            $update = 1 if $current_device_metavars{ $device->{name} }{ $metavar->{vdom} }{ $metavar->{name} };
+            log_print $update ? "Updating" : "Creating", "metavar $metavar->{name} for device $device->{name} in VDOM $metavar->{vdom}";
+
+            $res = fmg_api_call(
+                fmg => $uri,
+                session => $sid,
+                method => $update ? 'update' : 'add',
+                insecure => $args{insecure},
+                url => "/pm/config/adom/$adom->{name}/obj/fmg/variable/$metavar->{name}/dynamic_mapping",
+                data => [{
+                    value => $metavar->{value},
+                    _scope => [{ 
+                        vdom => $metavar->{vdom},
+                        name => $device->{name}
+                    }]
+                }]
+            );
+        }
+    }
+}
+            
+
+sub get_metavar_json {
+    my ($json_file) = @_;
+    my $json;
+
+    open(my $fh, "<:encoding(UTF-8)", $json_file) or croak "Could not open JSON file '$json_file'";
+
+    {
+        local $/;
+        $json = <$fh>;
+        close $fh;
+    }
+
+    return decode_json($json);
+}
+
+sub fmg_api_call {
+    my (%a) = @_;
+
+    # Mandatory arguments
+    croak "No 'fmg' host/IP address specified" unless $a{fmg};
+
+    # Add the JSON RPC path on
+    $a{fmg} = $a{fmg}."/jsonrpc";
+
+    #Set our defaults
+    $a{method} //= 'get';
+    $a{insecure} //= 0;
+    $a{session} //= '';
+    $a{id} //= 1;
+
+    my $ua = Mojo::UserAgent->new;
+    $ua->insecure($args{insecure});
+
+    my $res = $ua->post(
+        $a{fmg} => json => {
+            id => $a{id},
+            session => $a{session},
+            method => $a{method},
+            params => [{
+                url => $a{url},
+                data => defined $a{data} ? $a{data} : {}
+            }]
+        }
+    )->result;
+
+    if ($res->is_error) {
+        my $msg;
+
+        print Dumper $res->json;
+
+        if (defined $res->json->{oauth}) {
+            $msg = join '/', values %{$res->json->{oauth}};
+        } elsif (defined $res->json->{error_message}) {
+            $msg = $res->json->{error_message};
+        } elsif (defined $res->json->{error_description}) {
+            $msg = $res->json->{error_description};
+        } else {
+            $msg = "Unknown Error";
+        }
+
+        log_error("API Error ". $msg);
+        return ()
+    }
+
+    if (defined $res->{error}) {
+        log_error "Could not complete API call: ". $res->{error_description};
+    }
+
+
+    if ($res->json->{result}[0]{status}{code} != 0) {
+        log_error "API Call Errror: ", $res->json->{result}[0]{status}{message};
+    }
+
+    return $res->json;
+}
+

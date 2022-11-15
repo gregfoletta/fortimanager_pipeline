@@ -1,0 +1,49 @@
+{
+    "adoms": [
+        {
+            "name": "tenant_001",
+            "description": "Agwa Piero Corporation",
+            "variables": [
+                { "name": "snmp_community", "value": "super_secret" },
+                { "name": "snmp_server", "value": "192.0.2.16" }
+            ],
+            "devices": [
+                {   
+                    "name": "device_1",
+                    "serial": "FG60EPTK20010600",
+                    "variables": [
+                        { "name": "loopback", "value": "1.1.1.1" }
+                    ]
+                },  
+                {   
+                    "name": "device_2",
+                    "serial": "FG60EPTK20010601",
+                    "variables": [
+                        { "name": "loopback", "value": "1.1.2.1" }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "tenant_002",
+            "description": "Future Fund Corporation",
+            "devices": [
+                {   
+                    "name": "device_1",
+                    "serial": "FG60EPTK20010602",
+                    "variables": [
+                        { "name": "loopback", "value": "1.1.1.1", "vdom": "root" }
+                    ]
+                },  
+                {   
+                    "name": "device_2",
+                    "serial": "FG60EPTK20010603",
+                    "variables": [
+                        { "name": "loopback", "value": "1.1.2.1", "vdom": "root" }
+                    ]
+                }
+            ]
+        }
+    ]
+}
+
