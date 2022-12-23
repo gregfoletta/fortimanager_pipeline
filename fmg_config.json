@@ -3,19 +3,22 @@
         {
             "name": "tenant_001",
             "description": "Our one and only tenant",
+            "variables": [],
             "devices": [
                 {   
                     "name": "device_1",
                     "serial": "FG60EPTK20010600",
                     "variables": [
-                        { "name": "loopback", "value": "1.1.1.1" }
+                        { "name": "loopback", "value": "1.1.1.1" },
+                        { "name": "loopback", "value": "1.1.1.2", "vdom": "root" }
                     ]
                 },  
                 {   
                     "name": "device_2",
                     "serial": "FG60EPTK20010601",
                     "variables": [
-                        { "name": "loopback", "value": "1.1.2.1" }
+                        { "name": "loopback", "value": "1.1.2.1" },
+                        { "name": "loopback", "value": "1.1.2.2", "vdom": "root" }
                     ]
                 }
             ]
