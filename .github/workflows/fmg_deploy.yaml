@@ -39,6 +39,7 @@ jobs:
           install: |
             Mojo::UserAgent
             IO::Socket::SSL
+            URI
       - name: Wait Until FMG is Active
         run: until curl --silent -k https://127.0.0.1; do sleep 5; done; sleep 10
       - name: Configure FMG
@@ -62,6 +63,7 @@ jobs:
           install: |
             Mojo::UserAgent
             IO::Socket::SSL
+            URI
       - name: Configure FMG 
         env:
           FMG_API_URI: ${{ secrets.FMG_API_URI}}
