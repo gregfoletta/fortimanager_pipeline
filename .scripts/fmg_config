@@ -427,40 +427,28 @@ sub fmg_api_call {
             session => $a{session},
             method => $a{method},
             params => [{
-                url => $a{url},
+                url => "$a{url}",
                 data => defined $a{data} ? $a{data} : {}
             }]
         }
     )->result;
 
-    if ($res->is_error) {
-        my $msg;
+    my $json = $res->json;
 
-        print Dumper $res->json;
+    log_error "HTTP error: ". $res->body if (!defined $json);
 
-        if (defined $res->json->{oauth}) {
-            $msg = join '/', values %{$res->json->{oauth}};
-        } elsif (defined $res->json->{error_message}) {
-            $msg = $res->json->{error_message};
-        } elsif (defined $res->json->{error_description}) {
-            $msg = $res->json->{error_description};
-        } else {
-            $msg = "Unknown Error";
-        }
+    my $api_status = $json->{result}[0]{status};
 
-        log_error("API Error ". $msg);
-        return ()
+    if ($res->is_error or $json->{error} or $api_status->{code} != 0) {
+        # Find the error message somewhere in the JSON
+        my ($error_message) = grep { defined } (
+                @{ $json }{ qw( oauth error_message error_description ) },
+                $api_status->{message}
+        );
+
+        log_error "API error: $error_message";
     }
 
-    if (defined $res->{error}) {
-        log_error "Could not complete API call: ". $res->{error_description};
-    }
-
-
-    if ($res->json->{result}[0]{status}{code} != 0) {
-        log_error "API Call Errror: ", $res->json->{result}[0]{status}{message};
-    }
-
-    return $res->json;
+    return $json;
 }
 
