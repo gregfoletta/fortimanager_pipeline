@@ -242,6 +242,7 @@ sub create_adom_metavars {
         my $update = !! $current_metavars{ $metavar->{name} };
         log_print $update ? "Updating" : "Creating", "metavar $metavar->{name} in ADOM $adom->{name}";
 
+
         $res = fmg_api_call(
             fmg => $uri,
             session => $sid,
@@ -323,13 +324,20 @@ sub create_device_metavars {
     );
 
     # Determine the currently created variables at a {device,vdom,variable} level
-    my %current_device_metavars; 
-    for my $dynamic_metavars (grep { $_->{dynamic_mapping} } @{ $res->{result}[0]{data} }) {
-        my $variable = $dynamic_metavars->{name};
-        for my $mapping (@{ $dynamic_metavars->{dynamic_mapping} } ) {
-            my ($device, $vdom) = @{ $mapping->{_scope}[0] }{ qw(name vdom) };
+    my %current_metavars; 
+    for my $metavar (@{ $res->{result}[0]{data} }) {
+        # The metavar may have a default value (i.e. ADOM specific), but no dynamic value.
+        my $name = $metavar->{name};
+        # Use '(default)' as it's an illegal device name
+        $current_metavars{ $name }{"(default)"} = 1;
 
-            $current_device_metavars{ $device  }{ $vdom }{ $variable } = 1;
+        # Add the dynamic values if they exist 
+        if (defined $metavar->{dynamic_mapping}) {
+            for my $dyn_mapping(@{ $metavar->{dynamic_mapping} } ) {
+                my ($device, $vdom) = @{ $dyn_mapping->{_scope}[0] }{ qw(name vdom) };
+
+                $current_metavars{ $name }{ $device }{ $vdom } = 1;
+            }
         }
     }
 
@@ -341,9 +349,25 @@ sub create_device_metavars {
             # If the VDOM isn't set, default to global
             $metavar->{vdom} //= 'global';
 
+            if (!defined $current_metavars{ $metavar->{name} }) {
+                log_warning "Metavar '$metavar->{name}' doesn't exist, creating with default value of ''";
 
-            $update = 1 if $current_device_metavars{ $device->{name} }{ $metavar->{vdom} }{ $metavar->{name} };
-            log_print $update ? "Updating" : "Creating", "metavar $metavar->{name} for device $device->{name} in VDOM $metavar->{vdom}";
+                $res = fmg_api_call(
+                    fmg => $uri,
+                    session => $sid,
+                    method => 'add',
+                    insecure => $args{insecure},
+                    url => "/pm/config/adom/$adom->{name}/obj/fmg/variable",
+                    data => [{ 
+                        name => $metavar->{name},
+                        value => ''
+                    }]
+                ); 
+            }
+
+            # Create the device-specific metavar
+            $update = 1 if defined $current_metavars{ $metavar->{name} }{ $device->{name} }{ $metavar->{vdom} };
+            log_print $update ? "Updating" : "Creating", "metavar '$metavar->{name}' for device '$device->{name}' in VDOM '$metavar->{vdom}'";
 
             $res = fmg_api_call(
                 fmg => $uri,
