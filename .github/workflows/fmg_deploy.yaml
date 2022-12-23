@@ -41,7 +41,7 @@ jobs:
             IO::Socket::SSL
             URI
       - name: Wait Until FMG is Active
-        run: until curl --silent -k https://127.0.0.1; do sleep 5; done; sleep 10
+        run: until curl --silent -k https://127.0.0.1; do sleep 5; done; sleep 20
       - name: Configure FMG
         env:
           FMG_API_URI: https://localhost
