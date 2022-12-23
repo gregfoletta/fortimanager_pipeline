@@ -9,6 +9,7 @@ use Term::ANSIColor;
 use Carp;
 use Mojo::UserAgent;
 use JSON::PP;
+use URI;
 use Data::Dumper;
 
 
@@ -380,8 +381,11 @@ sub fmg_api_call {
     # Mandatory arguments
     croak "No 'fmg' host/IP address specified" unless $a{fmg};
 
-    # Add the JSON RPC path on
-    $a{fmg} = $a{fmg}."/jsonrpc";
+    # Turn the URI into a URI object
+    my $fmg_uri = URI->new($a{fmg}) or log_error "Invalid URI: '$a{fmg}'";
+    # Add the path on to the end and remove any queries
+    $fmg_uri->path('/jsonrpc');
+    $fmg_uri->query(undef);
 
     #Set our defaults
     $a{method} //= 'get';
@@ -393,7 +397,7 @@ sub fmg_api_call {
     $ua->insecure($args{insecure});
 
     my $res = $ua->post(
-        $a{fmg} => json => {
+        $fmg_uri->as_string => json => {
             id => $a{id},
             session => $a{session},
             method => $a{method},
