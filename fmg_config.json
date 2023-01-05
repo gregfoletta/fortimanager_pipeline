@@ -2,32 +2,59 @@
     "adoms": [
         {
             "name": "tenant_001",
-            "description": "Our one and only tenant",
-            "variables": [],
+            "description": "Our first tenant",
+            "fos_version": [ 7, 0 ],
+            "variables": { 
+                "domain_suffix": "i.foletta.xyz",
+                "dns": {
+                    "primary": "10.50.8.8",
+                    "secondary": "10.50.8.8"
+                },
+                "overlay_asn": "65000",
+                "overlay": [
+                    { "id": "0", "name": "Overlay_0", "net": "172.16.0.0", "mask": "255.255.255.0" },
+                    { "id": "1", "name": "Overlay_1", "net": "172.16.1.0", "mask": "255.255.255.0" }
+                ]
+            },
             "devices": [
                 {   
-                    "name": "device_1",
-                    "serial": "FG60EPTK20010600",
-                    "variables": [
-                        { "name": "loopback", "value": "1.1.1.1" },
-                        { "name": "loopback", "value": "1.1.1.2", "vdom": "root" }
-                    ]
+                    "name": "hub",
+                    "serial": "FGVMELTM22001110",
+                    "fos_version": [ 7, 0 ],
+                    "variables": { 
+                        "site_id": "1",
+                        "loopback": "1.1.1.0",
+                        "overlay": [
+                            { "interface": "port1", "fourth_octet": "1" },
+                            { "interface": "port1", "fourth_octet": "1" }
+                        ]
+                    }
                 },  
                 {   
-                    "name": "device_2",
-                    "serial": "FG60EPTK20010601",
-                    "variables": [
-                        { "name": "loopback", "value": "1.1.2.1" },
-                        { "name": "loopback", "value": "1.1.2.2", "vdom": "root" }
-                    ]
+                    "name": "spoke_1",
+                    "serial": "FGVMELTM22001111",
+                    "fos_version": [ 7, 0 ],
+                    "variables": { 
+                        "site_id": "2",
+                        "loopback": "1.1.1.1",
+                        "overlay": [
+                            { "interface": "port1", "fourth_octet": "16" },
+                            { "interface": "port2", "fourth_octet": "16" }
+                        ]
+                    }
                 },
                 {   
-                    "name": "device_4",
-                    "serial": "FG60EPTK20010602",
-                    "variables": [
-                        { "name": "loopback", "value": "1.1.3.1" },
-                        { "name": "loopback", "value": "1.1.3.2", "vdom": "root" }
-                    ]
+                    "name": "spoke_2",
+                    "serial": "FGVMELTM22001109",
+                    "fos_version": [ 7, 0 ],
+                    "variables": { 
+                        "site_id": "3",
+                        "loopback": "1.1.1.2",
+                        "overlay": [
+                            { "interface": "port1", "fourth_octet": "17" },
+                            { "interface": "port2", "fourth_octet": "17" }
+                        ]
+                    }
                 }
             ]
         }
