@@ -17,12 +17,20 @@
                 "name": {
                     "type": "string"
                 },
+                "fos_version": {
+                    "type": "array",
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "items": {
+                        "type": "number"
+                    }
+                },
                 "desc": {
                     "type": "string"
                 },
                 "variables": {
-                    "type": "array",
-                    "items": { "$ref": "#/$defs/adom_metavar" }
+                    "type": "object",
+                    "additionalProperties": { "type": [ "string", "object", "array" ] }
                 },
                 "devices": {
                     "type": "array",
@@ -31,21 +39,9 @@
 
             }
         },
-        "adom_metavar": {
-            "type": "object",
-            "required": [ "name", "value" ],
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "value": {
-                    "type": "string"
-                }
-            }
-        },
         "device": {
             "type": "object",
-            "required": [ "name", "serial" ],
+            "required": [ "name", "serial", "fos_version"],
             "properties": {
                 "name": {
                     "type": "string"
@@ -53,24 +49,17 @@
                 "serial": {
                     "type": "string"
                 },
-                "variables": {
+                "fos_version": {
                     "type": "array",
-                    "items": { "$ref": "#/$defs/device_metavar" }
-                }
-            }
-        },
-        "device_metavar": {
-            "type": "object",
-            "required": [ "name", "value" ],
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "value": {
-                    "type": "string"
-                },
-                "vdom": {
-                    "type": "string"
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "items": {
+                        "type": "number"
+                    }
+                }, 
+                "variables": {
+                    "type": "object",
+                    "additionalProperties": { "type": [ "string", "object", "array" ] }
                 }
             }
         }

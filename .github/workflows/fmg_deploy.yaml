@@ -1,6 +1,8 @@
 name: FortiManager Test and Deploy
 on: 
   push:
+    branches:
+        - master
     paths:
       - fmg_config.json
 jobs:
@@ -39,9 +41,9 @@ jobs:
           install: |
             Mojo::UserAgent
             IO::Socket::SSL
+            URI
       - name: Wait Until FMG is Active
-        #run: until curl --silent -k https://127.0.0.1; do sleep 5; done
-        run: sleep 60
+        run: until curl --silent -k https://127.0.0.1; do sleep 5; done; sleep 20
       - name: Configure FMG
         env:
           FMG_API_URI: https://localhost
@@ -63,6 +65,7 @@ jobs:
           install: |
             Mojo::UserAgent
             IO::Socket::SSL
+            URI
       - name: Configure FMG 
         env:
           FMG_API_URI: ${{ secrets.FMG_API_URI}}
