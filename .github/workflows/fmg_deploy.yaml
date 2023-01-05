@@ -1,6 +1,8 @@
 name: FortiManager Test and Deploy
 on: 
   push:
+    branches:
+        - master
     paths:
       - fmg_config.json
 jobs:
