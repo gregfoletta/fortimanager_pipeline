@@ -10,6 +10,7 @@ use Carp;
 use Mojo::UserAgent;
 use JSON::PP;
 use URI;
+use Hash::Flatten qw(:all);
 use Data::Dumper;
 
 
@@ -216,7 +217,9 @@ sub create_adoms {
         url => "/dvmdb/adom",
         data => [{
             name => $adom->{name},
-            desc => $adom->{description}
+            desc => $adom->{description},
+            os_ver => $adom->{fos_version}[0],
+            mr => $adom->{fos_version}[1],
         }]
     ); 
 }
@@ -234,17 +237,18 @@ sub create_adom_metavars {
         @{ $res->{result}[0]{data} };
      
 
+    my $flat_metavars = flatten $adom->{variables}, { ArrayDelimiter => '.' };
     METAVAR:
-    for my $metavar (@{ $adom->{variables} }) {
-        my $update = !! $current_metavars{ $metavar->{name} };
-        log_print $update ? "Updating" : "Creating", "metavar $metavar->{name} in ADOM $adom->{name}";
+    while (my ($mv_name, $mv_value) = each %{ $flat_metavars }) {
+        my $update = !! $current_metavars{ $mv_name };
+        log_print $update ? "Updating" : "Creating", "metavar $mv_name in ADOM $adom->{name}";
 
         $res = $api_ua->(
             method => $update ? 'update' : 'add',
             url => "/pm/config/adom/$adom->{name}/obj/fmg/variable",
             data => [{ 
-                name => $metavar->{name},
-                value => $metavar->{value}
+                name => $mv_name,
+                value => $mv_value
             }]
         ); 
     }
@@ -284,8 +288,8 @@ sub create_devices {
                     'device action' => 'add_model',
                     mgmt_mode => 'fmg',
                     os_type => 'fos',
-                    os_ver => 7,
-                    mr => 0,
+                    os_ver => $device->{fos_version}[0],
+                    mr => $device->{fos_version}[1],
                 },
                 flags => ['none']
             }
@@ -321,36 +325,38 @@ sub create_device_metavars {
 
     DEVICE:
     for my $device (@{ $adom->{devices} }) {
+        my $flat_metavars = flatten $device->{variables}, { ArrayDelimiter => '.' };
         METAVAR:
-        for my $metavar (@{ $device->{variables} }) {
+        while (my ($mv_name, $mv_value) = each %{ $flat_metavars }) {
             my $update = 0;
-            # If the VDOM isn't set, default to global
-            $metavar->{vdom} //= 'global';
 
-            if (!defined $current_metavars{ $metavar->{name} }) {
-                log_warning "Metavar '$metavar->{name}' doesn't exist, creating with default value of ''";
+            # If the metvar isn't created yet, we need to create it before we can make device
+            # specific metavar calls. We set a blank default value.
+            if (!defined $current_metavars{ $mv_name }) {
+                log_warning "Metavar '$mv_name' doesn't exist, creating with default value of ''";
 
                 $res = $api_ua->(
                     method => 'add',
                     url => "/pm/config/adom/$adom->{name}/obj/fmg/variable",
                     data => [{ 
-                        name => $metavar->{name},
+                        name => $mv_name,
                         value => ''
                     }]
                 ); 
             }
 
-            # Create the device-specific metavar
-            $update = 1 if defined $current_metavars{ $metavar->{name} }{ $device->{name} }{ $metavar->{vdom} };
-            log_print $update ? "Updating" : "Creating", "metavar '$metavar->{name}' for device '$device->{name}' in VDOM '$metavar->{vdom}'";
+            # Create the device-specific metavar in the global scope. VDOM specific metavars (including root) will
+            # be done in the VDOM section.
+            $update = 1 if defined $current_metavars{ $mv_name }{ $device->{name} }{ 'global' };
+            log_print $update ? "Updating" : "Creating", "metavar '$mv_name' for device '$device->{name}' in global";
 
             $res = $api_ua->(
                 method => $update ? 'update' : 'add',
-                url => "/pm/config/adom/$adom->{name}/obj/fmg/variable/$metavar->{name}/dynamic_mapping",
+                url => "/pm/config/adom/$adom->{name}/obj/fmg/variable/$mv_name/dynamic_mapping",
                 data => [{
-                    value => $metavar->{value},
+                    value => $mv_value,
                     _scope => [{ 
-                        vdom => $metavar->{vdom},
+                        vdom => 'global',
                         name => $device->{name}
                     }]
                 }]
