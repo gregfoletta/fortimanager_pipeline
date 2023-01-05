@@ -30,7 +30,7 @@
                 },
                 "variables": {
                     "type": "object",
-                    "additionalProperties": { "type": [ "string", "object" ] }
+                    "additionalProperties": { "type": [ "string", "object", "array" ] }
                 },
                 "devices": {
                     "type": "array",
@@ -59,7 +59,7 @@
                 }, 
                 "variables": {
                     "type": "object",
-                    "additionalProperties": { "type": [ "string", "object" ] }
+                    "additionalProperties": { "type": [ "string", "object", "array" ] }
                 }
             }
         }
