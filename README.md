@@ -25,28 +25,48 @@ graph TD;
 
 ## JSON Definition
 
-The definition of the ADOMs, devices, and variables is done within *fmg_config.json*. Here's an example of a simple definition of an ADOM with two devices, each with a per-device metavariable for their loopback address:
+The definition of the ADOMs, devices, and variables is done within *fmg_config.json*. Here's an example definition which create two devices in a new ADOM. There's a few ADOM variables which have the same value for every device in the ADOM. They devices can have their own speicific variables as well.
 
 ```json
 {
     "adoms": [
         {
             "name": "tenant_001",
-            "description": "Our one and only tenant",
+            "description": "Our first tenant",
+            "fos_version": [ 7, 0 ],
+            "variables": { 
+                "domain_suffix": "i.foletta.xyz",
+                "dns": {
+                    "primary": "10.50.8.8",
+                    "secondary": "10.50.8.8"
+                }
+            },
             "devices": [
-                {
-                    "name": "device_1",
-                    "serial": "FG60EPTK20010600",
-                    "variables": [
-                        { "name": "loopback", "value": "1.1.1.1" }
-                    ]
-                },
-                {
-                    "name": "device_2",
-                    "serial": "FG60EPTK20010600",
-                    "variables": [
-                        { "name": "loopback", "value": "1.1.2.1" }
-                    ]
+                {   
+                    "name": "hub",
+                    "serial": "FGVMELTM22001110",
+                    "fos_version": [ 7, 0 ],
+                    "variables": { 
+                        "site_id": "1",
+                        "loopback": "1.1.1.0",
+                        "overlay": [
+                            { "interface": "port1" },
+                            { "interface": "port1" }
+                        ]
+                    }
+                },  
+                {   
+                    "name": "spoke_1",
+                    "serial": "FGVMELTM22001110",
+                    "fos_version": [ 7, 0 ],
+                    "variables": { 
+                        "site_id": "2",
+                        "loopback": "1.1.1.1",
+                        "overlay": [
+                            { "interface": "port1" },
+                            { "interface": "port2" }
+                        ]
+                    }
                 }
             ]
         }
@@ -54,7 +74,54 @@ The definition of the ADOMs, devices, and variables is done within *fmg_config.j
 }
 ```
 
-A fully fledged config file can be viewed in the [examples folder](example/fmg_config.json), or you can view the [JSON schema](fmg_config.schema.json) which we'll talk about in the next section.
+### Structured Variables and Flattening
+
+In the example above, you may have noticed that while some of the varibles are standard key,value pairs, others have more structure to them. This allows for more flexibility and terseness in defining the variables in the JSON, while still working with the ForitManager metavariable constraints. Let's take a look at a couple of examples.
+
+Standard key values pairs in the JSON are created as you would expect, with the key being the name of the variable and the value being, well, the value! So the following definition:
+
+```json
+"variables": {
+    "loopback": "1.1.1.0"
+}
+```
+
+Results in a simple *loopback* variable with a value of *1.1.1.0*.
+
+If the value of the variable is not a string, but is instead either an array or an object, then the structure is 'flattened' into a single key value pair, with the key representing the structure. As an example if we had:
+
+```json
+"variables": {
+    "dns" : {
+        { "primary": "8.8.8.8" },
+        { "secondary": "1.1.1.1" }
+    }
+}
+```
+
+Would result in two variables:
+
+- a variable *dns.primary* with a value of *8.8.8.8*, and
+- a variable *dns.secondary* with a value of *1.1.1.1*.
+
+Arrays can also be used, so for example the following JSON:
+
+```json
+"variables": {
+    "overlay": [
+        { "name": "Overlay_1", "id": "1" },
+        { "name": "Overlay_2", "id": "2" }
+    ]
+}
+```
+
+would result in four variables:
+
+- *overlay.0.name* with a value of *Overlay_1*
+- *overlay.0.id* with a value of *1* 
+- *overlay.1.name* with a value of *Overlay_2*
+- *overlay.1.id* with a value of *2*
+
 
 ## Static Analysis 
 
