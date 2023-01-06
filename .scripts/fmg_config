@@ -347,16 +347,11 @@ sub create_device_metavars {
         METAVAR:
         while (my ($mv_name, $mv_value) = each %{ $flat_metavars }) {
             my $update = 0;
-            # This could be undefined
-            my $current_mv_value = $current_metavars{ $mv_name }{ $device->{name} }{ 'global' };
-
-            print Dumper \%current_metavars;
-            print $mv_name;
 
             # If the metvar isn't created at all, we need to create it before we can make device
             # specific metavar calls. We set a blank default value.
             if (!defined $current_metavars{ $mv_name }) {
-                log_warning "Metavar '$mv_name' doesn't exist, creating with an empty default value";
+                log_warning "ADOM metavar '$mv_name' doesn't exist, creating with an empty default value";
 
                 $res = $api_ua->(
                     method => 'add',
@@ -367,6 +362,9 @@ sub create_device_metavars {
                     }]
                 ); 
             }
+
+            # This could be undefined
+            my $current_mv_value = $current_metavars{ $mv_name }{ $device->{name} }{ 'global' };
 
             if (!defined $current_mv_value) {
                 log_change "Creating metavar '$mv_name' for device '$device->{name}' in global ($mv_value)";
