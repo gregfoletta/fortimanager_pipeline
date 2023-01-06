@@ -217,7 +217,7 @@ sub create_adoms {
 
 
     my $update = !!$current_adoms{ $adom->{name} };
-    log_print $update ? "Updating" : "Creating", "$adom->{name} ADOM";
+    log_change $update ? "Updating" : "Creating", "$adom->{name} ADOM";
 
     $res = $api_ua->(
         method => $update ? 'update' : 'add',
@@ -252,13 +252,13 @@ sub create_adom_metavars {
         my $current_mv_value = $current_metavars{ $mv_name };
 
         if (!defined $current_mv_value) {
-            log_print "Creating metavar '$mv_name' ($mv_value)";
+            log_change "Creating ADOM metavar '$mv_name' ($mv_value)";
         } elsif ($current_mv_value eq $mv_value) {
             log_print "ADOM metavar '$mv_name' unchanged ($mv_value), skipping";
             next METAVAR;
         } else {
             $update = 1;
-            log_change "Updating metavar '$mv_name' ($current_mv_value -> $mv_value)";
+            log_change "Updating ADOM metavar '$mv_name' ($current_mv_value -> $mv_value)";
         }
 
         $res = $api_ua->(
@@ -292,7 +292,7 @@ sub create_devices {
             next DEVICE;
         }
 
-        log_print "Creating model device '$device->{name}' in ADOM $adom->{name}";
+        log_change "Creating model device '$device->{name}' in ADOM $adom->{name}";
 
         $res = $api_ua->(
             method => 'exec',
@@ -350,7 +350,7 @@ sub create_device_metavars {
             # This could be undefined
             my $current_mv_value = $current_metavars{ $mv_name }{ $device->{name} }{ 'global' };
 
-            # If the metvar isn't created yet, we need to create it before we can make device
+            # If the metvar isn't created at all, we need to create it before we can make device
             # specific metavar calls. We set a blank default value.
             if (!defined $current_metavars{ $mv_name }) {
                 log_warning "Metavar '$mv_name' doesn't exist, creating with an empty default value";
@@ -366,9 +366,9 @@ sub create_device_metavars {
             }
 
             if (!defined $current_mv_value) {
-                log_print "Creating metavar '$mv_name' for device '$device->{name}' in global ($mv_value)";
+                log_change "Creating metavar '$mv_name' for device '$device->{name}' in global ($mv_value)";
             } elsif ($current_mv_value eq $mv_value) {
-                log_print "Device specific metavar '$mv_name' for device '$device->{name}' in global unchanged ($mv_value), skipping";
+                log_print "Device metavar '$mv_name' for device '$device->{name}' in global unchanged ($mv_value), skipping";
                 next METAVAR;
             } else {
                 $update = 1;
