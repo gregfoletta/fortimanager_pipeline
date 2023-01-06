@@ -49,7 +49,7 @@
                     "fos_version": [ 7, 0 ],
                     "variables": { 
                         "site_id": "3",
-                        "loopback": "1.1.1.5",
+                        "loopback": "1.1.1.2",
                         "overlay": [
                             { "interface": "port1", "fourth_octet": "17" },
                             { "interface": "port2", "fourth_octet": "17" }
