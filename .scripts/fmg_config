@@ -350,6 +350,9 @@ sub create_device_metavars {
             # This could be undefined
             my $current_mv_value = $current_metavars{ $mv_name }{ $device->{name} }{ 'global' };
 
+            print Dumper \%current_metavars;
+            print $mv_name;
+
             # If the metvar isn't created at all, we need to create it before we can make device
             # specific metavar calls. We set a blank default value.
             if (!defined $current_metavars{ $mv_name }) {
