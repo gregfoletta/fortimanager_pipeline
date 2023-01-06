@@ -126,13 +126,20 @@ sub log_print {
     say STDERR join ' ', @_;
 }
 
+sub log_change {
+    print STDERR colored('+ ', 'bold green');
+    say STDERR colored(join(' ', @_), 'green');
+}
+
 sub log_error {
-    say STDERR colored('- '.join(' ', @_), 'bold red');
+    print STDERR colored('- ', 'bold red');
+    say STDERR colored('- '.join(' ', @_), 'red');
     exit(1);
 }
 
 sub log_warning {
-    say STDERR colored('- '.join(' ', @_), 'bold yellow');
+    print STDERR colored('- ', 'bold yellow');
+    say STDERR colored(join(' ', @_), 'yellow');
 }
 
 # Pull the host from the command line or an env
@@ -233,15 +240,27 @@ sub create_adom_metavars {
     $res = $api_ua->(url => "/pm/config/adom/$adom->{name}/obj/fmg/variable");
 
     my %current_metavars = 
-        map { $_->{name} => 1 }
+        map { $_->{name} => $_->{value} }
         @{ $res->{result}[0]{data} };
-     
 
     my $flat_metavars = flatten $adom->{variables}, { ArrayDelimiter => '.' };
+
     METAVAR:
     while (my ($mv_name, $mv_value) = each %{ $flat_metavars }) {
-        my $update = !! $current_metavars{ $mv_name };
-        log_print $update ? "Updating" : "Creating", "metavar $mv_name in ADOM $adom->{name}";
+        # Check if the metvar has changed
+        if ($current_metavars{ $mv_name } eq $mv_value) {
+            log_print "ADOM metavar '$mv_name' unchanged ($mv_value), skipping";
+            next METAVAR;
+        }
+
+        # Are we updating or are we creating?
+        my $update;
+        if (my $current_metavar_value = $current_metavars{ $mv_name }) {
+            $update = 1;
+            log_change "Updating ADOM metavar '$mv_name' ($current_metavar_value -> $mv_value)";
+        } else {
+            log_print "Creating ADOM metavar '$mv_name' ($mv_value)";
+        }
 
         $res = $api_ua->(
             method => $update ? 'update' : 'add',
@@ -270,7 +289,7 @@ sub create_devices {
     DEVICE:
     for my $device (@{ $adom->{devices} }) {
         if ($current_devices{ $device->{name} }) {
-            log_warning "Device '$device->{name}' already added, skipping";
+            log_print "Device '$device->{name}' already added, skipping";
             next DEVICE;
         }
 
@@ -311,14 +330,14 @@ sub create_device_metavars {
         # The metavar may have a default value (i.e. ADOM specific), but no dynamic value.
         my $name = $metavar->{name};
         # Use '(default)' as it's an illegal device name
-        $current_metavars{ $name }{"(default)"} = 1;
+        $current_metavars{ $name }{"(default)"} = $metavar->{value};
 
         # Add the dynamic values if they exist 
         if (defined $metavar->{dynamic_mapping}) {
             for my $dyn_mapping(@{ $metavar->{dynamic_mapping} } ) {
                 my ($device, $vdom) = @{ $dyn_mapping->{_scope}[0] }{ qw(name vdom) };
 
-                $current_metavars{ $name }{ $device }{ $vdom } = 1;
+                $current_metavars{ $name }{ $device }{ $vdom } = $dyn_mapping->{value};
             }
         }
     }
@@ -333,7 +352,7 @@ sub create_device_metavars {
             # If the metvar isn't created yet, we need to create it before we can make device
             # specific metavar calls. We set a blank default value.
             if (!defined $current_metavars{ $mv_name }) {
-                log_warning "Metavar '$mv_name' doesn't exist, creating with default value of ''";
+                log_warning "Metavar '$mv_name' doesn't exist, creating with an empty default value";
 
                 $res = $api_ua->(
                     method => 'add',
@@ -345,10 +364,20 @@ sub create_device_metavars {
                 ); 
             }
 
+            # Has the value changed? If not we skip
+            if ($current_metavars{ $mv_name }{ $device->{name} }{ 'global' } eq $mv_value) {
+                log_print "Device specific metavar '$mv_name' for device '$device->{name}' in global unchanged ($mv_value), skipping";
+                next METAVAR;
+            }
+
             # Create the device-specific metavar in the global scope. VDOM specific metavars (including root) will
             # be done in the VDOM section.
-            $update = 1 if defined $current_metavars{ $mv_name }{ $device->{name} }{ 'global' };
-            log_print $update ? "Updating" : "Creating", "metavar '$mv_name' for device '$device->{name}' in global";
+            if (my $current_metavar_value = $current_metavars{ $mv_name }{ $device->{name} }{ 'global' }) {
+                $update = 1;
+                log_change "Updating metavar '$mv_name' for device '$device->{name}' in global ($current_metavar_value -> $mv_value)";
+            } else {
+                log_print "Creating metavar '$mv_name' for device '$device->{name}' in global ($mv_value)";
+            }
 
             $res = $api_ua->(
                 method => $update ? 'update' : 'add',
