@@ -8,7 +8,7 @@
                 "domain_suffix": "i.foletta.xyz",
                 "dns": {
                     "primary": "10.50.8.8",
-                    "secondary": "11.50.8.8"
+                    "secondary": "11.50.8.9"
                 },
                 "overlay_asn": "65000",
                 "overlay": [
@@ -23,7 +23,7 @@
                     "fos_version": [ 7, 0 ],
                     "variables": { 
                         "site_id": "1",
-                        "loopback": "1.1.0.1",
+                        "loopback": "1.1.3.1",
                         "overlay": [
                             { "interface": "port1", "fourth_octet": "1" },
                             { "interface": "port1", "fourth_octet": "1" }
