@@ -8,7 +8,7 @@
                 "domain_suffix": "i.foletta.xyz",
                 "dns": {
                     "primary": "10.50.8.8",
-                    "secondary": "10.50.8.8"
+                    "secondary": "10.50.8.9"
                 },
                 "overlay_asn": "65000",
                 "overlay": [
