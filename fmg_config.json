@@ -8,7 +8,7 @@
                 "domain_suffix": "i.foletta.xyz",
                 "dns": {
                     "primary": "10.50.8.8",
-                    "secondary": "10.50.8.9"
+                    "secondary": "10.50.8.8"
                 },
                 "overlay_asn": "65000",
                 "overlay": [
@@ -21,38 +21,13 @@
                     "name": "hub",
                     "serial": "FGVMELTM22001110",
                     "fos_version": [ 7, 0 ],
-                    "variables": { 
+                    "variables": {
+                        "hostname": "hub",
                         "site_id": "1",
                         "loopback": "1.1.0.1",
                         "overlay": [
-                            { "interface": "port1", "fourth_octet": "1" },
-                            { "interface": "port1", "fourth_octet": "1" }
-                        ]
-                    }
-                },  
-                {   
-                    "name": "spoke_1",
-                    "serial": "FGVMELTM22001111",
-                    "fos_version": [ 7, 0 ],
-                    "variables": { 
-                        "site_id": "2",
-                        "loopback": "1.1.1.1",
-                        "overlay": [
-                            { "interface": "port1", "fourth_octet": "16" },
-                            { "interface": "port2", "fourth_octet": "16" }
-                        ]
-                    }
-                },
-                {   
-                    "name": "spoke_2",
-                    "serial": "FGVMELTM22001109",
-                    "fos_version": [ 7, 0 ],
-                    "variables": { 
-                        "site_id": "3",
-                        "loopback": "1.1.1.2",
-                        "overlay": [
-                            { "interface": "port1", "fourth_octet": "17" },
-                            { "interface": "port2", "fourth_octet": "17" }
+                            { "interface": "port1", "ipv4_index": "1" },
+                            { "interface": "port1", "ipv4_index": "1" }
                         ]
                     }
                 }
