@@ -32,6 +32,48 @@
                     }
                 }
             ]
+        },
+        {
+            "name": "tenant_002",
+            "description": "Contoso",
+            "fos_version": [ 7, 0 ],
+            "variables": { 
+                "domain_suffix": "foo.com",
+                "dns": {
+                    "primary": "8.8.8.8",
+                    "secondary": "1.1.1.1"
+                }
+            },
+            "devices": [
+                {   
+                    "name": "hub",
+                    "serial": "FGVMELTM22001111",
+                    "fos_version": [ 7, 0 ],
+                    "variables": {
+                        "hostname": "hub",
+                        "site_id": "1",
+                        "loopback": "1.1.0.1",
+                        "overlay": [
+                            { "interface": "port1", "ipv4_index": "1" },
+                            { "interface": "port1", "ipv4_index": "1" }
+                        ]
+                    }
+                },
+                {   
+                    "name": "hub",
+                    "serial": "FGVMELTM22001112",
+                    "fos_version": [ 7, 0 ],
+                    "variables": {
+                        "hostname": "hub",
+                        "site_id": "2",
+                        "loopback": "1.1.0.2",
+                        "overlay": [
+                            { "interface": "port1", "ipv4_index": "1" },
+                            { "interface": "port1", "ipv4_index": "1" }
+                        ]
+                    }
+                }
+            ]
         }
     ]
 }
