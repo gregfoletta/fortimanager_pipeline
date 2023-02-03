@@ -46,7 +46,7 @@
             },
             "devices": [
                 {   
-                    "name": "hub",
+                    "name": "hub_a",
                     "serial": "FGVMELTM22001111",
                     "fos_version": [ 7, 0 ],
                     "variables": {
@@ -60,7 +60,7 @@
                     }
                 },
                 {   
-                    "name": "hub",
+                    "name": "hub_b",
                     "serial": "FGVMELTM22001112",
                     "fos_version": [ 7, 0 ],
                     "variables": {
