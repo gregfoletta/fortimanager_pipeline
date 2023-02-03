@@ -10,7 +10,7 @@
                     "primary": "10.50.8.8",
                     "secondary": "10.50.8.8"
                 },
-                "overlay_asn": "65000",
+                "overlay_asn": "65001",
                 "overlay": [
                     { "id": "0", "name": "Overlay_0", "net": "172.16.0.0", "mask": "255.255.255.0" },
                     { "id": "1", "name": "Overlay_1", "net": "172.16.1.0", "mask": "255.255.255.0" }
