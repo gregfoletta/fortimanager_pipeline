@@ -1,72 +1,25 @@
 {
     "adoms": [
         {
-            "name": "tenant_001",
-            "description": "Our first tenant",
-            "fos_version": [ 7, 0 ],
+            "name": "cust0001",
+            "description": "Customer 1",
+            "fos_version": [ 7, 2 ],
             "variables": { 
                 "domain_suffix": "i.foletta.xyz",
                 "dns": {
-                    "primary": "10.50.8.8",
-                    "secondary": "10.50.8.8"
+                    "primary": "10.50.254.254"
                 },
-                "overlay_asn": "65000",
-                "overlay": [
-                    { "id": "0", "name": "Overlay_0", "net": "172.16.0.0", "mask": "255.255.255.0" },
-                    { "id": "1", "name": "Overlay_1", "net": "172.16.1.0", "mask": "255.255.255.0" }
-                ]
+                "overlay_asn": "65000"
             },
             "devices": [
                 {   
                     "name": "hub",
                     "serial": "FGVMELTM22001110",
-                    "fos_version": [ 7, 0 ],
+                    "fos_version": [ 7, 2 ],
                     "variables": {
-                        "hostname": "hub",
+                        "hostname": "hub_1",
                         "site_id": "1",
                         "loopback": "1.1.0.1",
-                        "overlay": [
-                            { "interface": "port1", "ipv4_index": "1" },
-                            { "interface": "port1", "ipv4_index": "1" }
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "name": "tenant_002",
-            "description": "Contoso",
-            "fos_version": [ 7, 0 ],
-            "variables": { 
-                "domain_suffix": "foo.com",
-                "dns": {
-                    "primary": "8.8.8.8",
-                    "secondary": "1.1.1.1"
-                }
-            },
-            "devices": [
-                {   
-                    "name": "hub_a",
-                    "serial": "FGVMELTM22001111",
-                    "fos_version": [ 7, 0 ],
-                    "variables": {
-                        "hostname": "hub",
-                        "site_id": "1",
-                        "loopback": "1.1.0.1",
-                        "overlay": [
-                            { "interface": "port1", "ipv4_index": "1" },
-                            { "interface": "port1", "ipv4_index": "1" }
-                        ]
-                    }
-                },
-                {   
-                    "name": "hub_b",
-                    "serial": "FGVMELTM22001112",
-                    "fos_version": [ 7, 0 ],
-                    "variables": {
-                        "hostname": "hub",
-                        "site_id": "2",
-                        "loopback": "1.1.0.2",
                         "overlay": [
                             { "interface": "port1", "ipv4_index": "1" },
                             { "interface": "port1", "ipv4_index": "1" }
