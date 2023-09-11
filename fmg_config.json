@@ -5,25 +5,121 @@
             "description": "Customer 1",
             "fos_version": [ 7, 2 ],
             "variables": { 
-                "domain_suffix": "i.foletta.xyz",
                 "dns": {
-                    "primary": "10.50.254.254"
+                    "primary": "10.50.254.254",
+                    "suffix": "i.foletta.xyz"
                 },
-                "overlay_asn": "65000"
+                "overlay": {
+                    "asn": "65001",
+                    "loopback": {
+                        "range": "10.51.254.0/24",
+                        "hub1": "10.51.254.1",
+                        "hub2": "10.51.254.2"
+                    },
+                    "ids": [
+                        { 
+                            "hub1": { "ip": "10.51.252.4" },
+                            "hub2": { "ip": "10.51.252.5" }
+                        },
+                        { 
+                            "hub1": { "ip": "10.51.253.4" },
+                            "hub2": { "ip": "10.51.253.5" }
+                        }
+                    ],
+                    "healthcheck": {
+                        "hub1": "10.51.0.255",
+                        "hub2": "10.51.1.255"
+                    }
+                }
+
             },
             "devices": [
                 {   
-                    "name": "hub",
-                    "serial": "FGVMELTM22001110",
+                    "name": "fw3-i-foletta-xyz",
+                    "serial": "FGVMELTM22001114",
                     "fos_version": [ 7, 2 ],
                     "variables": {
-                        "hostname": "hub_1",
+                        "hostname": "fw3-i-foletta-xyz",
                         "site_id": "1",
-                        "loopback": "1.1.0.1",
-                        "overlay": [
-                            { "interface": "port1", "ipv4_index": "1" },
-                            { "interface": "port1", "ipv4_index": "1" }
-                        ]
+                        "interfaces": {
+                            "loopback": [
+                                { "name": "Loopback_IPSEC", "ip": "10.51.254.1" },
+                                { "name": "Loopback_HC", "ip": "10.51.0.255" }
+                            ],
+                            "port": [
+                                {},
+                                {},
+                                {},
+                                { "ip": "10.51.0.1", "subnet": "255.255.255.128" },
+                                { "ip": "10.50.9.6", "subnet": "255.255.255.0" }
+                            ]
+                        }
+                    }
+                },
+                {   
+                    "name": "fw4-i-foletta-xyz",
+                    "serial": "FGVMELTM22001112",
+                    "fos_version": [ 7, 2 ],
+                    "variables": {
+                        "hostname": "fw4-i-foletta-xyz",
+                        "site_id": "2",
+                        "interfaces": {
+                            "loopback": [
+                                { "name": "Loopback_IPSEC", "ip": "10.51.254.2" },
+                                { "name": "Loopback_HC", "ip": "10.51.1.255" }
+                            ],
+                            "port": [
+                                {},
+                                {},
+                                {},
+                                { "ip": "10.51.1.1", "subnet": "255.255.255.128" },
+                                { "ip": "10.50.9.7", "subnet": "255.255.255.0" }
+                            ]
+                        }
+                    }
+                },
+                {   
+                    "name": "fw5-i-foletta-xyz",
+                    "serial": "FGVMELTM22001111",
+                    "fos_version": [ 7, 2 ],
+                    "variables": {
+                        "hostname": "fw5-i-foletta-xyz",
+                        "site_id": "16",
+                        "interfaces": {
+                            "loopback": [
+                                { "name": "Loopback_IPSEC", "ip": "10.51.254.16" },
+                                { "name": "Loopback_HC", "ip": "10.51.16.255" }
+                            ],
+                            "port": [
+                                {},
+                                {},
+                                {},
+                                { "ip": "10.51.16.1", "subnet": "255.255.255.128" },
+                                { "ip": "10.50.9.8", "subnet": "255.255.255.0" }
+                            ]
+                        }
+                    }
+                },
+                {   
+                    "name": "fw6-i-foletta-xyz",
+                    "serial": "FGVMELTM22001113",
+                    "fos_version": [ 7, 2 ],
+                    "variables": {
+                        "hostname": "fw6-i-foletta-xyz",
+                        "site_id": "17",
+                        "interfaces": {
+                            "loopback": [
+                                { "name": "Loopback_IPSEC", "ip": "10.51.254.17" },
+                                { "name": "Loopback_HC", "ip": "10.51.17.255" }
+                            ],
+                            "port": [
+                                {},
+                                {},
+                                {},
+                                { "ip": "10.51.17.1", "subnet": "255.255.255.128" },
+                                { "ip": "10.50.9.9", "subnet": "255.255.255.0" }
+                            ]
+                        }
                     }
                 }
             ]
