@@ -188,12 +188,26 @@ apply_config($fmg_data, $api_ua);
 
 sub apply_config {
     my ($fmg_data, $api_ua) = @_;
+    my $ret;
 
+    ADOM:
     for my $adom (@{ $fmg_data->{adoms} }) {
+        # Lock the ADOM
+        #log_print "Locking ADOM ".$adom->{name};
+        #$ret = $api_ua->(method => 'exec', url => "/dvmdb/adom/".$adom->{name}."/workspace/lock");
+
+        #if ($ret->{result}[0]{status}{code} != 0) {
+        #    log_warning "Could not lock ADOM ".$adom->{name}.", moving to next ADOM";
+        #    next ADOM;
+        #}
+
         create_adoms($adom, $api_ua);
         create_adom_metavars($adom, $api_ua);
         create_devices($adom, $api_ua);
         create_device_metavars($adom, $api_ua);
+        
+        #log_print "Unlocking ADOM ".$adom->{name};
+        #$ret = $api_ua->(method => 'exec', url => "/dvmdb/adom/".$adom->{name}."/workspace/unlock");
     }
 }
 
@@ -208,7 +222,7 @@ sub create_adoms {
 
     # Filter out non-user created ADOMs and create a hash
     my %current_adoms = 
-        map { $_->{name} => 1 }
+        map { $_->{name} => { workspace_mode => $_->{workspace_mode} } }
         grep { $_->{create_time} != 0 }
         @{ $res->{result}[0]{data} };
 
@@ -343,50 +357,60 @@ sub create_device_metavars {
 
     DEVICE:
     for my $device (@{ $adom->{devices} }) {
-        my $flat_metavars = flatten $device->{variables}, { ArrayDelimiter => '.' };
-        METAVAR:
-        while (my ($mv_name, $mv_value) = each %{ $flat_metavars }) {
-            my $update = 0;
+        my %new_metavars;
+        # Get the global metavars for the device
+        $new_metavars{global} = $device->{variables};
+        for my $vdom ( keys %{ $device->{vdoms} } ) {
+            $new_metavars{ $vdom } = $device->{vdoms}{ $vdom }{variables}; 
+        }
 
-            # If the metvar isn't created at all, we need to create it before we can make device
-            # specific metavar calls. We set a blank default value.
-            if (!defined $current_metavars{ $mv_name }) {
-                log_warning "ADOM metavar '$mv_name' doesn't exist, creating with an empty default value";
+        VDOM:
+        for my $vdom (keys %new_metavars) {
+            my $flat_metavars = flatten $new_metavars{ $vdom }, { ArrayDelimiter => '.' };
+            METAVAR:
+            while (my ($mv_name, $mv_value) = each %{ $flat_metavars }) {
+                my $update = 0;
+
+                # If the metvar isn't created at all, we need to create it before we can make device
+                # specific metavar calls. We set a blank default value.
+                if (!defined $current_metavars{ $mv_name }) {
+                    log_warning "ADOM metavar '$mv_name' doesn't exist, creating with an empty default value";
+
+                    $res = $api_ua->(
+                        method => 'add',
+                        url => "/pm/config/adom/$adom->{name}/obj/fmg/variable",
+                        data => [{ 
+                            name => $mv_name,
+                            value => ''
+                        }]
+                    ); 
+                }
+
+                # This could be undefined
+                my $current_mv_value = $current_metavars{ $mv_name }{ $device->{name} }{ $vdom };
+
+                if (!defined $current_mv_value) {
+                    log_change "Creating metavar '$mv_name' for device '$device->{name}' in VDOM $vdom ($mv_value)";
+                } elsif ($current_mv_value eq $mv_value) {
+                    log_print "Device metavar '$mv_name' for device '$device->{name}' in VDOM $vdom unchanged ($mv_value), skipping";
+                    next METAVAR;
+                } else {
+                    $update = 1;
+                    log_change "Updating metavar '$mv_name' for device '$device->{name}' in VDOM $vdom ($current_mv_value -> $mv_value)";
+                }
 
                 $res = $api_ua->(
-                    method => 'add',
-                    url => "/pm/config/adom/$adom->{name}/obj/fmg/variable",
-                    data => [{ 
-                        name => $mv_name,
-                        value => ''
+                    method => $update ? 'update' : 'add',
+                    url => "/pm/config/adom/$adom->{name}/obj/fmg/variable/$mv_name/dynamic_mapping",
+                    data => [{
+                        value => $mv_value,
+                        _scope => [{ 
+                            vdom => $vdom,
+                            name => $device->{name}
+                        }]
                     }]
-                ); 
+                );
             }
-
-            # This could be undefined
-            my $current_mv_value = $current_metavars{ $mv_name }{ $device->{name} }{ 'global' };
-
-            if (!defined $current_mv_value) {
-                log_change "Creating metavar '$mv_name' for device '$device->{name}' in global ($mv_value)";
-            } elsif ($current_mv_value eq $mv_value) {
-                log_print "Device metavar '$mv_name' for device '$device->{name}' in global unchanged ($mv_value), skipping";
-                next METAVAR;
-            } else {
-                $update = 1;
-                log_change "Updating metavar '$mv_name' for device '$device->{name}' in global ($current_mv_value -> $mv_value)";
-            }
-
-            $res = $api_ua->(
-                method => $update ? 'update' : 'add',
-                url => "/pm/config/adom/$adom->{name}/obj/fmg/variable/$mv_name/dynamic_mapping",
-                data => [{
-                    value => $mv_value,
-                    _scope => [{ 
-                        vdom => 'global',
-                        name => $device->{name}
-                    }]
-                }]
-            );
         }
     }
 }
