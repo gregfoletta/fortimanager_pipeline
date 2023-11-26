@@ -1,37 +1,14 @@
 {
     "adoms": [
         {
-            "name": "cust0001",
-            "description": "Customer 1",
-            "fos_version": [ 7, 2 ],
+            "name": "cgnat",
+            "description": "CG-NAT Scale Out Cluster",
+            "fos_version": [ 7, 4 ],
             "variables": { 
                 "dns": {
                     "primary": "10.50.254.254",
                     "suffix": "i.foletta.xyz"
-                },
-                "overlay": {
-                    "asn": "65001",
-                    "loopback": {
-                        "range": "10.51.254.0/24",
-                        "hub1": "10.51.254.1",
-                        "hub2": "10.51.254.2"
-                    },
-                    "ids": [
-                        { 
-                            "hub1": { "ip": "10.51.252.4" },
-                            "hub2": { "ip": "10.51.252.5" }
-                        },
-                        { 
-                            "hub1": { "ip": "10.51.253.4" },
-                            "hub2": { "ip": "10.51.253.5" }
-                        }
-                    ],
-                    "healthcheck": {
-                        "hub1": "10.51.0.255",
-                        "hub2": "10.51.1.255"
-                    }
                 }
-
             },
             "devices": [
                 {   
@@ -40,86 +17,135 @@
                     "fos_version": [ 7, 2 ],
                     "variables": {
                         "hostname": "fw3-i-foletta-xyz",
-                        "site_id": "1",
+                        "cgnat_pool_start": "203.0.113.0",
+                        "cgnat_pool_end": "203.0.113.15",
                         "interfaces": {
-                            "loopback": [
-                                { "name": "Loopback_IPSEC", "ip": "10.51.254.1" },
-                                { "name": "Loopback_HC", "ip": "10.51.0.255" }
-                            ],
                             "port": [
-                                {},
-                                {},
-                                {},
-                                { "ip": "10.51.0.1", "subnet": "255.255.255.128" },
-                                { "ip": "10.50.9.6", "subnet": "255.255.255.0" }
+                                { "ip": "10.50.9.6", "subnet": "255.255.255.0" },
+                                { "ip": "10.50.12.6", "subnet": "255.255.255.0" }
+                            ],
+                            "loopback": [
+                                { "ip": "10.50.255.3", "subnet": "255.255.255.255" }
                             ]
+
+                        },
+                        "bgp": {
+                            "asn": "65050",
+                            "router-id": "10.50.12.6"
+                        },
+                        "cgnat": {
+                            "subnet": "203.0.113.0/28"
+                        },
+                        "fgsp": {
+                            "id": "1",
+                            "peer": "10.50.12.200",
+                            "peer_vdom": "fw3"
                         }
                     }
                 },
                 {   
                     "name": "fw4-i-foletta-xyz",
                     "serial": "FGVMELTM22001112",
-                    "fos_version": [ 7, 2 ],
+                    "fos_version": [ 7, 4 ],
                     "variables": {
                         "hostname": "fw4-i-foletta-xyz",
-                        "site_id": "2",
+                        "cgnat_pool_start": "203.0.113.16",
+                        "cgnat_pool_end": "203.0.113.31",
                         "interfaces": {
-                            "loopback": [
-                                { "name": "Loopback_IPSEC", "ip": "10.51.254.2" },
-                                { "name": "Loopback_HC", "ip": "10.51.1.255" }
-                            ],
                             "port": [
-                                {},
-                                {},
-                                {},
-                                { "ip": "10.51.1.1", "subnet": "255.255.255.128" },
-                                { "ip": "10.50.9.7", "subnet": "255.255.255.0" }
-                            ]
-                        }
-                    }
-                },
-                {   
-                    "name": "fw5-i-foletta-xyz",
-                    "serial": "FGVMELTM22001111",
-                    "fos_version": [ 7, 2 ],
-                    "variables": {
-                        "hostname": "fw5-i-foletta-xyz",
-                        "site_id": "16",
-                        "interfaces": {
-                            "loopback": [
-                                { "name": "Loopback_IPSEC", "ip": "10.51.254.16" },
-                                { "name": "Loopback_HC", "ip": "10.51.16.255" }
+                                { "ip": "10.50.9.7", "subnet": "255.255.255.0" },
+                                { "ip": "10.50.12.7", "subnet": "255.255.255.0" }
                             ],
-                            "port": [
-                                {},
-                                {},
-                                {},
-                                { "ip": "10.51.16.1", "subnet": "255.255.255.128" },
-                                { "ip": "10.50.9.8", "subnet": "255.255.255.0" }
+                            "loopback": [
+                                { "ip": "10.50.255.4", "subnet": "255.255.255.255" }
                             ]
+                        },
+                        "bgp": {
+                            "asn": "65050",
+                            "router-id": "10.50.12.7"
+                        },
+                        "cgnat": {
+                            "subnet": "203.0.113.16/28"
+                        },
+                        "fgsp": {
+                            "id": "2",
+                            "peer": "10.50.12.201",
+                            "peer_vdom": "fw3"
                         }
                     }
                 },
                 {   
                     "name": "fw6-i-foletta-xyz",
                     "serial": "FGVMELTM22001113",
-                    "fos_version": [ 7, 2 ],
-                    "variables": {
-                        "hostname": "fw6-i-foletta-xyz",
-                        "site_id": "17",
-                        "interfaces": {
-                            "loopback": [
-                                { "name": "Loopback_IPSEC", "ip": "10.51.254.17" },
-                                { "name": "Loopback_HC", "ip": "10.51.17.255" }
-                            ],
-                            "port": [
-                                {},
-                                {},
-                                {},
-                                { "ip": "10.51.17.1", "subnet": "255.255.255.128" },
-                                { "ip": "10.50.9.9", "subnet": "255.255.255.0" }
-                            ]
+                    "fos_version": [ 7, 4 ],
+                    "vdoms": {
+                        "root": {
+                            "variables": {
+                                "interfaces": {
+                                    "port": [
+                                        { "ip": "10.50.9.7", "subnet": "255.255.255.0" },
+                                        { "ip": "10.50.12.7", "subnet": "255.255.255.0" }
+                                    ]
+                                }
+                            }
+                        },
+                        "fw3": {
+                            "variables": {
+                                "vdom": "fw3",
+                                "cgnat_pool_start": "203.0.113.0",
+                                "cgnat_pool_end": "203.0.113.15",
+                                "interfaces": {
+                                    "port": [
+                                        { "name": "port2", "ip": "10.50.9.200", "subnet": "255.255.255.0" },
+                                        { "name": "port3", "ip": "10.50.12.200", "subnet": "255.255.255.0" }
+                                    ],
+                                    "loopback": [
+                                        { "ip": "10.50.255.3", "subnet": "255.255.255.255" }
+                                    ]
+                                },
+                                "bgp": {
+                                    "asn": "65050",
+                                    "router-id": "10.50.12.200"
+                                },
+                                "cgnat": {
+                                    "subnet": "203.0.113.0/28"
+                                },
+                                "fgsp": {
+                                    "id": "15",
+                                    "peer": "10.50.12.6"
+                                }
+                            }
+                        },
+                        "fw4": {
+                            "variables": {
+                                "vdom": "fw4",
+                                "cgnat_pool_start": "203.0.113.16",
+                                "cgnat_pool_end": "203.0.113.31",
+                                "interfaces": {
+                                    "port": [
+                                        { "name": "port4", "ip": "10.50.9.201", "subnet": "255.255.255.0" },
+                                        { "name": "port5", "ip": "10.50.12.201", "subnet": "255.255.255.0" }
+                                    ],
+                                    "loopback": [
+                                        { "ip": "10.50.255.4", "subnet": "255.255.255.255" }
+                                    ]
+                                },
+                                "bgp": {
+                                    "asn": "65050",
+                                    "router-id": "10.50.12.201"
+                                },
+                                "cgnat": {
+                                    "subnet": "203.0.113.16/28"
+                                },
+                                "fgsp": {
+                                    "id": "14",
+                                    "peer": "10.50.12.7"
+                                }
+                            }
                         }
+                    },
+                    "variables": {
+                        "hostname": "fw6-i-foletta-xyz"
                     }
                 }
             ]
